@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chicago-crime-etl"
+version = "0.1.0"
+description = "Production-ready downloader for Chicago Crime data (Socrata/SoQL) with resumable chunking."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Habib Bayo" }]
+requires-python = ">=3.9"
+dependencies = [
+  "requests>=2.31",
+  "pandas>=2.1",
+]
+
+[project.optional-dependencies]
+parquet = ["pyarrow>=15; python_version >= '3.9'", "fastparquet>=2024.2.0"]
+
+[project.scripts]
+crime-dl = "data.download_data_v5:main"
+
+[tool.setuptools]
+packages = ["data"]  # keeps your current layout; no refactor needed
+
+[tool.setuptools.package-data]
+data = []
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.pyc", "__pycache__/*"]
+
+[tool.setuptools.dynamic]
+# not used now, but you can move version to a module later
