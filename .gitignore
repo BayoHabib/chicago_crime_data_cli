@@ -20,3 +20,11 @@ raw*/
 # pytest
 .pytest_cache/
 .cache/
+# IDE
+.idea/
+.vscode/
+
+# Builds
+build/
+dist/
+*.egg-info/
