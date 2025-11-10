@@ -1,5 +1,9 @@
 # 📊 Chicago Crime Downloader — Command-Line Guide
 
+[![Test & Lint](https://github.com/BayoHabib/chicago_crime_data_cli/actions/workflows/test.yml/badge.svg)](https://github.com/BayoHabib/chicago_crime_data_cli/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
 ## 🚀 Overview
 
 The **Chicago Crime Downloader** is a production-ready, resumable command-line tool to fetch open crime data directly from the **City of Chicago Open Data API** (`ijzp-q8t2`).  
@@ -23,6 +27,8 @@ Unlike typical one-shot CSV downloads, this tool is:
 - Optional: install Parquet engine (`pyarrow` or `fastparquet`)
 
 ### 2️⃣ Clone and install
+
+CLI to download Chicago Crime data from Socrata with resumable chunking, manifests, and flexible layouts.
 
 ```bash
 git clone https://github.com/<yourusername>/chicago-crime-downloader.git

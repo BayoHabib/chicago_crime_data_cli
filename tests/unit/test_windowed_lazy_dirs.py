@@ -1,5 +1,5 @@
 from datetime import date
-from data.download_data_v5 import (
+from chicago_crime_downloader import (
     run_windowed_mode, RunConfig, HttpConfig
 )
 import pytest
@@ -7,7 +7,10 @@ import pytest
 @pytest.mark.unit
 def test_window_creates_no_empty_dir_when_zero_rows(tmp_path, monkeypatch, caplog):
     # Fake safe_request → always empty list
-    monkeypatch.setattr("data.download_data_v5.safe_request", lambda *a, **k: [])
+    def fake_safe_request(*a, **k):
+        return []
+    
+    monkeypatch.setattr("chicago_crime_downloader.runners.safe_request", fake_safe_request)
 
     cfg = RunConfig(
         mode="daily",
@@ -20,14 +23,14 @@ def test_window_creates_no_empty_dir_when_zero_rows(tmp_path, monkeypatch, caplo
         select=None,
         columns_file=None,
     )
-    http = HttpConfig()
-    headers = {"User-Agent": "test"}
+    cfg.layout = "nested"
+    
+    http = HttpConfig(timeout=60, retries=1, sleep=0.0, user_agent="t")
+    headers = {"User-Agent": "t"}
+    wins = [(date(2025, 11, 5), date(2025, 11, 5), "2025-11-05")]
+    
+    run_windowed_mode(cfg, http, headers, None, wins, "daily")
+    
+    # Should NOT have created a subdirectory because no data was written
+    assert not (tmp_path / "daily").exists()
 
-    # One daily window (2025-11-05)
-    windows = [(date(2025, 11, 5), date(2025, 11, 5), "2025-11-05")]
-
-    run_windowed_mode(cfg, http, headers, None, windows, "daily")
-
-    base_dir = tmp_path / "daily" / "2025-11-05"
-    # With lazy creation, directory should not exist if no rows returned
-    assert not base_dir.exists()

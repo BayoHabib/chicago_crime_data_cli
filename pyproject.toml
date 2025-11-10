@@ -3,26 +3,54 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "chicago-crime-etl"
-version = "0.1.0"
-description = "Production-ready downloader for Chicago Crime data (Socrata/SoQL) with resumable chunking."
+name = "chicago-crime-downloader"
+version = "0.5.0"
+description = "Production-ready downloader for Chicago Crime data (Socrata/SoQL) with resumable chunking and modular architecture."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Habib Bayo" }]
-requires-python = ">=3.9"
-dependencies = [
+requires-python = ">=3.11"
+keywords = ["chicago", "crime", "data", "downloader", "socrata", "soql"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Database",
+  "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/BayoHabib/chicago_crime_data_cli"
+Documentation = "https://github.com/BayoHabib/chicago_crime_data_cli#readme"
+Repository = "https://github.com/BayoHabib/chicago_crime_data_cli.git"
+Issues = "https://github.com/BayoHabib/chicago_crime_data_cli/issues"
   "requests>=2.31",
   "pandas>=2.1",
 ]
 
 [project.optional-dependencies]
 parquet = ["pyarrow>=15; python_version >= '3.9'", "fastparquet>=2024.2.0"]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.1",
+  "mypy>=1.6",
+  "types-requests>=2.31",
+  "pandas-stubs>=2.1",
+]
 
 [project.scripts]
+chicago-crime-dl = "chicago_crime_downloader.cli:main"
 crime-dl = "data.download_data_v5:main"
 
 [tool.setuptools]
-packages = ["data"]  # keeps your current layout; no refactor needed
+packages = ["chicago_crime_downloader", "data"]
 
 [tool.setuptools.package-data]
 data = []
@@ -32,3 +60,28 @@ data = []
 
 [tool.setuptools.dynamic]
 # not used now, but you can move version to a module later
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "--strict-markers -v"
+markers = [
+  "integration: integration tests (require real HTTP requests)",
+  "unit: unit tests (fast)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".git", "__pycache__", ".venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "D"]
+ignore = ["D100", "D104"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+disallow_untyped_defs = false
