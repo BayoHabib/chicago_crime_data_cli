@@ -4,8 +4,8 @@ pytestmark = pytest.mark.integration
 
 def test_full_mode_resumes_from_chunk_index(tmp_path, monkeypatch, caplog):
     """Test that full mode resumes from the last chunk index."""
-    from tests.conftest import run_cli, FakeResp
-    
+    from tests.conftest import FakeResp, run_cli
+
     call_count = {"n": 0}
     def fake_get(url, params=None, headers=None, timeout=None):
         call_count["n"] += 1
@@ -27,7 +27,7 @@ def test_full_mode_resumes_from_chunk_index(tmp_path, monkeypatch, caplog):
         "--sleep", "0",
     ]
     run_cli(monkeypatch, "chicago_crime_downloader.cli", argv)
-    
+
     assert call_count["n"] >= 1
     assert (out_root / "full" / "all").exists()
 

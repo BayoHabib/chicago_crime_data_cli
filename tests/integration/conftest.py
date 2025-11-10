@@ -1,5 +1,9 @@
-import importlib, sys, time
+import importlib
+import sys
+import time
+
 import pytest
+
 
 class FakeResp:
     def __init__(self, status=200, payload=None, headers=None):

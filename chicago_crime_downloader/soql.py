@@ -1,10 +1,10 @@
 """SoQL helpers: date parsing, bounds, parameter builders for offset and windowed modes."""
 from __future__ import annotations
+
+import calendar
 import logging
 import re
-import calendar
-from datetime import date, timedelta, datetime
-from typing import Dict, Optional, List, Tuple
+from datetime import date, datetime, timedelta
 
 
 def _last_day_of_month(y: int, m: int) -> int:
@@ -12,7 +12,7 @@ def _last_day_of_month(y: int, m: int) -> int:
     return calendar.monthrange(y, m)[1]
 
 
-def parse_date(d: Optional[str], *, role: str = "date") -> Optional[date]:
+def parse_date(d: str | None, *, role: str = "date") -> date | None:
     """Parse YYYY-MM-DD with end-of-month clamp and informative warning."""
     if not d:
         return None
@@ -28,7 +28,7 @@ def parse_date(d: Optional[str], *, role: str = "date") -> Optional[date]:
     return date(y, m, day)
 
 
-def _soql_day_bounds(d: date) -> Tuple[str, str]:
+def _soql_day_bounds(d: date) -> tuple[str, str]:
     """Return ISO8601 strings WITHOUT timezone for a half-open day window."""
     start = f"{d:%Y-%m-%d}T00:00:00.000"
     end_next = f"{(d + timedelta(days=1)):%Y-%m-%d}T00:00:00.000"
@@ -38,10 +38,10 @@ def _soql_day_bounds(d: date) -> Tuple[str, str]:
 def soql_params(
     offset: int,
     limit: int,
-    start_date: Optional[str],
-    end_date: Optional[str],
-    select: Optional[str],
-) -> Dict[str, str]:
+    start_date: str | None,
+    end_date: str | None,
+    select: str | None,
+) -> dict[str, str]:
     """Build SoQL parameters for offset-based pagination."""
     params = {"$limit": str(limit), "$offset": str(offset), "$order": "date desc"}
     if select:
@@ -68,8 +68,8 @@ def soql_params_window(
     limit: int,
     start_d: date,
     end_d: date,
-    select: Optional[str],
-) -> Dict[str, str]:
+    select: str | None,
+) -> dict[str, str]:
     """Build SoQL parameters for windowed queries."""
     s_iso, _ = _soql_day_bounds(start_d)
     e_next_iso = f"{(end_d + timedelta(days=1)):%Y-%m-%d}T00:00:00.000"
@@ -85,7 +85,7 @@ def soql_params_window(
     return params
 
 
-def month_windows(start: date, end: date) -> List[Tuple[date, date, str]]:
+def month_windows(start: date, end: date) -> list[tuple[date, date, str]]:
     """Generate month-based windows."""
     wins = []
     cur = date(start.year, start.month, 1)
@@ -103,7 +103,7 @@ def month_windows(start: date, end: date) -> List[Tuple[date, date, str]]:
     return wins
 
 
-def day_windows(start: date, end: date) -> List[Tuple[date, date, str]]:
+def day_windows(start: date, end: date) -> list[tuple[date, date, str]]:
     """Generate day-based windows."""
     days = []
     cur = start
@@ -114,7 +114,7 @@ def day_windows(start: date, end: date) -> List[Tuple[date, date, str]]:
     return days
 
 
-def week_windows(start: date, end: date) -> List[Tuple[date, date, str]]:
+def week_windows(start: date, end: date) -> list[tuple[date, date, str]]:
     """Generate week-based windows (ISO week, Monday-Sunday)."""
     wins = []
     cur = start - timedelta(days=start.weekday())  # align to Monday

@@ -1,5 +1,7 @@
 import pytest
+
 from chicago_crime_downloader.io_utils import resume_index
+
 
 @pytest.mark.unit
 def test_resume_index_counts_existing(tmp_path):

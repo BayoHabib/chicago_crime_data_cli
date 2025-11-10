@@ -1,6 +1,8 @@
-import os
+
 import pytest
-from chicago_crime_downloader import headers_with_token, HttpConfig
+
+from chicago_crime_downloader import HttpConfig, headers_with_token
+
 
 @pytest.mark.unit
 def test_headers_with_token_env(monkeypatch):

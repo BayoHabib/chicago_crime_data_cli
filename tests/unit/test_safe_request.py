@@ -1,7 +1,10 @@
 import time
+
 import pytest
-import chicago_crime_downloader.http_client as http_module
 import requests
+
+import chicago_crime_downloader.http_client as http_module
+
 
 class _Resp:
     def __init__(self, status=200, payload=None, headers=None):

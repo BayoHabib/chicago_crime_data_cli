@@ -4,8 +4,8 @@ pytestmark = pytest.mark.integration
 
 def test_cli_handles_429_then_succeeds(tmp_path, monkeypatch, capsys):
     """Test that CLI retries on 429 Rate Limited."""
-    from tests.conftest import run_cli, FakeResp
-    
+    from tests.conftest import FakeResp, run_cli
+
     calls = {"n": 0}
     def fake_get(url, params=None, headers=None, timeout=None):
         calls["n"] += 1
@@ -30,7 +30,7 @@ def test_cli_handles_429_then_succeeds(tmp_path, monkeypatch, capsys):
     ]
     run_cli(monkeypatch, "chicago_crime_downloader.cli", argv)
     assert calls["n"] >= 2
-    
+
     # Check output in stdout
     captured = capsys.readouterr()
     assert "429 Rate limited" in captured.out or "Saved" in captured.out

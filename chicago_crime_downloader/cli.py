@@ -1,19 +1,20 @@
 """CLI: thin argparse wrapper that wires to modular runners."""
 from __future__ import annotations
+
 import argparse
-import sys
 import logging
 import signal
-from pathlib import Path
+import sys
 from datetime import date
-
-from .config import RunConfig, HttpConfig
-from .logging_utils import setup_logging
-from .http_client import headers_with_token
-from .runners import run_offset_mode, run_windowed_mode
-from .soql import parse_date, month_windows, day_windows, week_windows
+from pathlib import Path
 
 import chicago_crime_downloader.runners as runners_mod
+
+from .config import HttpConfig, RunConfig
+from .http_client import headers_with_token
+from .logging_utils import setup_logging
+from .runners import run_offset_mode, run_windowed_mode
+from .soql import day_windows, month_windows, parse_date, week_windows
 
 
 def _sigint_handler(signum, frame):
@@ -41,7 +42,7 @@ def load_select(select: str | None, columns_file: Path | None) -> str | None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Main CLI entrypoint."""
+    """Run the CLI with parsed arguments."""
     ap = argparse.ArgumentParser(
         description="Resumable Chicago Crime downloader (SoQL + Token) — v5."
     )
@@ -49,15 +50,27 @@ def main(argv: list[str] | None = None) -> None:
         "--mode",
         choices=["full", "monthly", "weekly", "daily"],
         default="full",
-        help="full: single $offset run; monthly: per-month windows; weekly: per-week windows; daily: per-day windows.",
+        help=(
+            "full: single $offset run; monthly: per-month windows; "
+            "weekly: per-week windows; daily: per-day windows."
+        ),
     )
 
-    ap.add_argument("--chunk-size", type=int, default=50000, help="Rows per chunk.")
-    ap.add_argument("--max-chunks", type=int, default=None, help="[full mode] Optional cap on chunks this run.")
+    ap.add_argument(
+        "--chunk-size", type=int, default=50000, help="Rows per chunk."
+    )
+    ap.add_argument(
+        "--max-chunks",
+        type=int,
+        default=None,
+        help="[full mode] Optional cap on chunks this run.",
+    )
     ap.add_argument("--start-date", type=str, default=None, help="YYYY-MM-DD (optional)")
     ap.add_argument("--end-date", type=str, default=None, help="YYYY-MM-DD (optional)")
 
-    ap.add_argument("--out-root", type=Path, default=Path("data/raw"), help="Root output directory.")
+    ap.add_argument(
+        "--out-root", type=Path, default=Path("data/raw"), help="Root output directory."
+    )
     ap.add_argument(
         "--out-format",
         choices=["csv", "parquet"],

@@ -1,6 +1,10 @@
-import pytest
 from datetime import date
+
+import pytest
+
 from chicago_crime_downloader.soql import parse_date
+
+
 @pytest.mark.unit
 def test_parse_date_ok():
     assert parse_date("2020-04-30", role="end-date") == date(2020, 4, 30)

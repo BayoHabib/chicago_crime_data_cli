@@ -1,10 +1,10 @@
 """Logging helpers (console/file, optional JSON formatter)."""
 from __future__ import annotations
+
+import json
 import logging
 import sys
-import json
 from datetime import datetime
-from typing import Optional
 from pathlib import Path
 
 
@@ -24,7 +24,7 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(payload, ensure_ascii=False)
 
 
-def setup_logging(log_file: Optional[str], json_logs: bool = False) -> None:
+def setup_logging(log_file: str | None, json_logs: bool = False) -> None:
     """Configure root logger to console and optional file."""
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)

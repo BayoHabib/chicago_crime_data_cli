@@ -1,17 +1,18 @@
 """HTTP helpers: safe_request (with retries/backoff), headers helper, probe_count_for_day."""
 from __future__ import annotations
-import time
+
 import logging
 import os
-from typing import Dict, Any, Optional, List
+import time
 from datetime import date, timedelta
+from typing import Any
 
 import requests
 
-from .config import HttpConfig, BASE_URL
+from .config import BASE_URL, HttpConfig
 
 
-def headers_with_token(http: HttpConfig) -> Dict[str, str]:
+def headers_with_token(http: HttpConfig) -> dict[str, str]:
     """Build HTTP headers with optional App Token."""
     token = os.getenv("SOC_APP_TOKEN") or os.getenv("SOCRATA_APP_TOKEN")
     headers = {"User-Agent": http.user_agent}
@@ -24,8 +25,8 @@ def headers_with_token(http: HttpConfig) -> Dict[str, str]:
 
 
 def safe_request(
-    params: Dict[str, str], headers: Dict[str, str], http: HttpConfig
-) -> List[Dict[str, Any]]:
+    params: dict[str, str], headers: dict[str, str], http: HttpConfig
+) -> list[dict[str, Any]]:
     """Execute HTTP GET with retry logic and backoff."""
     backoff = 2
     for attempt in range(1, http.retries + 1):
@@ -49,7 +50,7 @@ def safe_request(
 
 
 def probe_count_for_day(
-    d: date, headers: Dict[str, str], http: Optional[HttpConfig] = None
+    d: date, headers: dict[str, str], http: HttpConfig | None = None
 ) -> int:
     """Get row count published for a given day via SoQL count query."""
     s = f"{d:%Y-%m-%d}T00:00:00.000"

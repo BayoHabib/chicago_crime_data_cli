@@ -1,6 +1,10 @@
 from datetime import date
-from chicago_crime_downloader.soql import soql_params_window, soql_params
+
 import pytest
+
+from chicago_crime_downloader.soql import soql_params, soql_params_window
+
+
 def _norm(s: str) -> str:
     return " ".join(s.split())
 @pytest.mark.unit

@@ -1,21 +1,21 @@
 """Run modes: offset (full) and windowed (daily/monthly/weekly)."""
 from __future__ import annotations
+
 import logging
 import time
-from typing import List, Tuple, Optional, Dict
 from datetime import date
 
 import pandas as pd
 
-from .config import RunConfig, HttpConfig
-from .http_client import safe_request, probe_count_for_day
+from .config import HttpConfig, RunConfig
+from .http_client import probe_count_for_day, safe_request
 from .io_utils import (
-    make_paths,
     ensure_dir,
-    write_frame,
-    write_manifest,
+    make_paths,
     resume_index,
     resume_index_for_layout,
+    write_frame,
+    write_manifest,
 )
 from .soql import soql_params, soql_params_window
 
@@ -23,7 +23,7 @@ stop_requested = False
 
 
 def run_offset_mode(
-    cfg: RunConfig, http: HttpConfig, headers: Dict[str, str], select: Optional[str]
+    cfg: RunConfig, http: HttpConfig, headers: dict[str, str], select: str | None
 ) -> None:
     """Download using single $offset pagination (full mode)."""
     window_id = (
@@ -91,9 +91,9 @@ def run_offset_mode(
 def run_windowed_mode(
     cfg: RunConfig,
     http: HttpConfig,
-    headers: Dict[str, str],
-    select: Optional[str],
-    windows: List[Tuple[date, date, str]],
+    headers: dict[str, str],
+    select: str | None,
+    windows: list[tuple[date, date, str]],
     mode_label: str,
 ) -> None:
     """Download using windowed queries (monthly/weekly/daily)."""

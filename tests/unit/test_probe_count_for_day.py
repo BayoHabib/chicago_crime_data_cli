@@ -1,11 +1,14 @@
 from datetime import date
-from chicago_crime_downloader import probe_count_for_day
+
 import pytest
+
+from chicago_crime_downloader import probe_count_for_day
+
 
 @pytest.mark.unit
 def test_probe_count_for_day_builds_half_open(monkeypatch):
     captured = {}
-    
+
     def fake_safe_request(params, headers, http):
         captured["params"] = params
         return [{"count_1": "42"}]

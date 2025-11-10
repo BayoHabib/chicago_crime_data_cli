@@ -1,6 +1,9 @@
 from datetime import date
+
 import pytest
+
 from chicago_crime_downloader.soql import parse_date
+
 
 @pytest.mark.unit
 def test_parse_date_clamp_role(caplog):

@@ -3,6 +3,7 @@ import pytest
 
 from chicago_crime_downloader import write_frame
 
+
 @pytest.mark.unit
 def test_parquet_fallback_to_csv_when_no_engine(tmp_path, monkeypatch):
     # Force the helper to report "no parquet engine"

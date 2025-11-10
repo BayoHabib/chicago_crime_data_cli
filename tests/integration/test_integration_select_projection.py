@@ -4,8 +4,8 @@ pytestmark = pytest.mark.integration
 
 def test_column_projection_with_select(tmp_path, monkeypatch, caplog):
     """Test that --select applies column projection."""
-    from tests.conftest import run_cli, FakeResp
-    
+    from tests.conftest import FakeResp, run_cli
+
     captured = {}
     def fake_get(url, params=None, headers=None, timeout=None):
         captured["params"] = params
@@ -26,6 +26,6 @@ def test_column_projection_with_select(tmp_path, monkeypatch, caplog):
         "--sleep", "0",
     ]
     run_cli(monkeypatch, "chicago_crime_downloader.cli", argv)
-    
+
     assert captured.get("params", {}).get("$select") == "id,date"
 

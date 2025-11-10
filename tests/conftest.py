@@ -1,6 +1,7 @@
+import importlib
 import sys
 import time
-import importlib
+
 import pytest
 
 # --- Helpers used by integration tests ---
@@ -20,9 +21,13 @@ class FakeResp:
 
 def run_cli(monkeypatch, module_path: str, argv):
     """
-    Import the target module fresh and invoke its main() with a fake argv.
-    - module_path: e.g. 'chicago_crime_downloader.cli' or 'data.download_data_v5'
-    - argv: list[str] as if from the CLI (without program name)
+    Import the target module fresh and invoke its main() with argv.
+
+    Args:
+        monkeypatch: pytest's monkeypatch fixture.
+        module_path: e.g. 'chicago_crime_downloader.cli' or 'data.download_data_v5'.
+        argv: list[str] as if from the CLI (without program name).
+
     """
     # Ensure a fresh import each time (module holds globals)
     if module_path in sys.modules:

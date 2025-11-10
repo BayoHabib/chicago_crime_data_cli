@@ -4,9 +4,10 @@ pytestmark = pytest.mark.integration
 
 def test_daily_one_chunk(tmp_path, monkeypatch, capsys):
     """Test daily mode downloads a single day with one chunk."""
-    from tests.conftest import run_cli, FakeResp
     from pathlib import Path
-    
+
+    from tests.conftest import FakeResp, run_cli
+
     def fake_get(url, params=None, headers=None, timeout=None):
         # Return a single chunk worth of rows
         rows = [{"id": f"ID{i:04d}", "date": "2020-02-01T00:00:00.000"} for i in range(100)]
@@ -26,7 +27,7 @@ def test_daily_one_chunk(tmp_path, monkeypatch, capsys):
         "--sleep", "0",
     ]
     run_cli(monkeypatch, "chicago_crime_downloader.cli", argv)
-    
+
     # Default layout inference: "raw_daily" ends with "daily" -> mode-flat layout
     # So: out_root/mode_label/window_id_chunk
     assert (out_root / "daily").exists()

@@ -1,10 +1,10 @@
 """IO helpers: parquet fallback, manifests, resume index, path helpers."""
 from __future__ import annotations
-import logging
+
 import hashlib
 import json
+import logging
 from pathlib import Path
-from typing import Dict, Tuple, Optional
 
 import pandas as pd
 
@@ -60,7 +60,7 @@ def write_manifest(
     manifest_path: Path,
     *,
     data_path: Path,
-    params: Dict[str, str],
+    params: dict[str, str],
     rows: int,
     started: float,
     finished: float,
@@ -89,7 +89,7 @@ def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
-def _split_wid(wid: str) -> Tuple[str, str, Optional[str]]:
+def _split_wid(wid: str) -> tuple[str, str, str | None]:
     """Split window ID into year, month, day components."""
     parts = wid.split("-")
     year, month = parts[0], parts[1]
@@ -97,7 +97,7 @@ def _split_wid(wid: str) -> Tuple[str, str, Optional[str]]:
     return year, month, day
 
 
-def make_paths(cfg: RunConfig, mode_label: str, wid: str, chunk_no: int) -> Tuple[Path, Path, Path]:
+def make_paths(cfg: RunConfig, mode_label: str, wid: str, chunk_no: int) -> tuple[Path, Path, Path]:
     """Compute base_dir, data_path, manifest_path based on layout."""
     year, month, day = _split_wid(wid)
 
@@ -141,7 +141,7 @@ def resume_index_for_layout(
     return len(files)
 
 
-def resume_index(dir_: Path, prefix: Optional[str] = None) -> int:
+def resume_index(dir_: Path, prefix: str | None = None) -> int:
     """Count existing chunk files for full mode."""
     patterns = []
     if prefix:
