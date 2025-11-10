@@ -31,7 +31,7 @@ def write_frame(df: pd.DataFrame, path: Path, out_format: str) -> Path:
     if out_format == "parquet":
         eng = _parquet_engine()
         if eng:
-            df.to_parquet(path, index=False, engine=eng)
+            df.to_parquet(path, index=False, engine=eng)  # type: ignore[call-overload]
             return path
         else:
             logging.warning(

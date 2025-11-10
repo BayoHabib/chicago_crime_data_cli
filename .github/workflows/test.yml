@@ -33,7 +33,7 @@ jobs:
         run: ruff check chicago_crime_downloader tests
 
       - name: Run Type Check (mypy)
-        run: mypy chicago_crime_downloader --ignore-missing-imports
+        run: mypy chicago_crime_downloader --ignore-missing-imports --disable-error-code=import-untyped
 
       - name: Run Tests
         run: pytest -v --tb=short

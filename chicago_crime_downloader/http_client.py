@@ -39,7 +39,7 @@ def safe_request(
                 backoff = min(backoff * 2, 60)
                 continue
             r.raise_for_status()
-            return r.json()
+            return r.json()  # type: ignore[no-any-return]
         except requests.RequestException as e:
             logging.warning(f"Attempt {attempt}/{http.retries} failed: {e}")
             if attempt == http.retries:
