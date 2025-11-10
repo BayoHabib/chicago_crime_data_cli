@@ -367,7 +367,22 @@ chicago-crime-dl --mode monthly --start-date 2024-09-01 --end-date 2024-11-30 \
 
 ---
 
-## 📚 Learn More
+## � Documentation
+
+| Document | Purpose |
+|----------|---------|
+| **[INSTALLATION.md](./INSTALLATION.md)** | Detailed setup guide (5 methods) + troubleshooting |
+| **[docs/architecture/ARCHITECTURE.md](./docs/architecture/ARCHITECTURE.md)** | System design, layered architecture |
+| **[docs/architecture/API.md](./docs/architecture/API.md)** | Complete API reference |
+| **[CHANGELOG.md](./CHANGELOG.md)** | Release history and migration guides |
+| **[CONTRIBUTING.md](./CONTRIBUTING.md)** | How to contribute code |
+| **[docs/CHICAGO_DATA_RESOURCES.md](./docs/CHICAGO_DATA_RESOURCES.md)** | 40+ available Chicago datasets |
+| **[docs/DEVELOPMENT_STRATEGY.md](./docs/DEVELOPMENT_STRATEGY.md)** | Roadmap v0.6.0-v1.0.0 & business plan |
+| **[docs/FUTURE_ROADMAP.md](./docs/FUTURE_ROADMAP.md)** | Detailed vision for multi-dataset platform |
+
+---
+
+## �📚 Learn More
 
 - **[Socrata Open Data](https://dev.socrata.com/)** — API documentation
 - **[Chicago Crime Data](https://data.cityofchicago.org/api/views/ijzp-q8t2)** — Endpoint details
