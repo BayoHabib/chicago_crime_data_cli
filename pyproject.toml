@@ -25,14 +25,16 @@ classifiers = [
   "Topic :: Utilities",
 ]
 
+dependencies = [
+  "requests>=2.31",
+  "pandas>=2.1",
+]
+
 [project.urls]
 Homepage = "https://github.com/BayoHabib/chicago_crime_data_cli"
 Documentation = "https://github.com/BayoHabib/chicago_crime_data_cli#readme"
 Repository = "https://github.com/BayoHabib/chicago_crime_data_cli.git"
 Issues = "https://github.com/BayoHabib/chicago_crime_data_cli/issues"
-  "requests>=2.31",
-  "pandas>=2.1",
-]
 
 [project.optional-dependencies]
 parquet = ["pyarrow>=15; python_version >= '3.9'", "fastparquet>=2024.2.0"]
