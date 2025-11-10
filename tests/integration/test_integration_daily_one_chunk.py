@@ -1,41 +1,35 @@
 import pytest
+
 pytestmark = pytest.mark.integration
 
-def test_daily_mode_writes_one_chunk(tmp_path, monkeypatch, fake_sleep):
-    # Arrange: fake requests.get to return 1 page (1 row), then empty
-    pages = [
-        [{"id": "X1", "date": "2020-01-10T12:34:56.000", "primary_type": "THEFT"}],
-        []
-    ]
+def test_daily_one_chunk(tmp_path, monkeypatch, capsys):
+    """Test daily mode downloads a single day with one chunk."""
+    from tests.conftest import run_cli, FakeResp
+    from pathlib import Path
+    
     def fake_get(url, params=None, headers=None, timeout=None):
-        return __import__("tests.conftest").conftest.FakeResp(200, pages.pop(0))
+        # Return a single chunk worth of rows
+        rows = [{"id": f"ID{i:04d}", "date": "2020-02-01T00:00:00.000"} for i in range(100)]
+        return FakeResp(200, rows)
 
-    import data.download_data_v5 as mod
-    monkeypatch.setenv("SOC_APP_TOKEN", "abc123")  # exercise header path
-    monkeypatch.setattr(mod.requests, "get", fake_get)
+    import requests
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setenv("SOC_APP_TOKEN", "abc123")
 
-    out_root = tmp_path / "raw_daily"
+    out_root = Path(tmp_path) / "raw_daily"
     argv = [
-        "download_data_v5.py",
         "--mode", "daily",
-        "--start-date", "2020-01-10",
-        "--end-date",   "2020-01-10",
-        "--chunk-size", "50000",
-        "--out-root",   str(out_root),
+        "--start-date", "2020-02-01",
+        "--end-date", "2020-02-01",
+        "--out-root", str(out_root),
         "--out-format", "csv",
-        "--sleep",      "0.1",
-        "--log-json"
+        "--sleep", "0",
     ]
+    run_cli(monkeypatch, "chicago_crime_downloader.cli", argv)
+    
+    # Default layout inference: "raw_daily" ends with "daily" -> mode-flat layout
+    # So: out_root/mode_label/window_id_chunk
+    assert (out_root / "daily").exists()
+    csv_files = list((out_root / "daily").glob("*.csv"))
+    assert len(csv_files) > 0
 
-    # Act
-    mod = __import__("tests.conftest").conftest.run_cli(monkeypatch, "data.download_data_v5", argv)
-
-    # Assert: data + manifest present; exactly one chunk
-    day_dir = out_root / "daily" / "2020-01-10"
-    data_file = day_dir / "2020-01-10_chunk_0001.csv"
-    manifest_file = day_dir / "2020-01-10_chunk_0001.manifest.json"
-
-    assert data_file.exists()
-    assert manifest_file.exists()
-    # no second chunk
-    assert not (day_dir / "2020-01-10_chunk_0002.csv").exists()

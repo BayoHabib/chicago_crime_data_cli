@@ -1,5 +1,5 @@
 from datetime import date
-from data.download_data_v5 import soql_params_window, soql_params
+from chicago_crime_downloader.soql import soql_params_window, soql_params
 import pytest
 def _norm(s: str) -> str:
     return " ".join(s.split())

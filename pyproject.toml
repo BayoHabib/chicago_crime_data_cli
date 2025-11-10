@@ -19,10 +19,11 @@ dependencies = [
 parquet = ["pyarrow>=15; python_version >= '3.9'", "fastparquet>=2024.2.0"]
 
 [project.scripts]
+chicago-crime-dl = "chicago_crime_downloader.cli:main"
 crime-dl = "data.download_data_v5:main"
 
 [tool.setuptools]
-packages = ["data"]  # keeps your current layout; no refactor needed
+packages = ["chicago_crime_downloader", "data"]
 
 [tool.setuptools.package-data]
 data = []

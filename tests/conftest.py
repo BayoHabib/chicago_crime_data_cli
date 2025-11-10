@@ -21,21 +21,21 @@ class FakeResp:
 def run_cli(monkeypatch, module_path: str, argv):
     """
     Import the target module fresh and invoke its main() with a fake argv.
-    - module_path: e.g. 'data.download_data_v5'
-    - argv: list[str] as if from the CLI
+    - module_path: e.g. 'chicago_crime_downloader.cli' or 'data.download_data_v5'
+    - argv: list[str] as if from the CLI (without program name)
     """
     # Ensure a fresh import each time (module holds globals)
     if module_path in sys.modules:
         del sys.modules[module_path]
 
-    monkeypatch.setattr(sys, "argv", argv)
     mod = importlib.import_module(module_path)
 
     # Reset global stop flag if present
     if hasattr(mod, "stop_requested"):
         mod.stop_requested = False
 
-    mod.main()
+    # Call main() with argv directly (not via sys.argv)
+    mod.main(argv=argv)
     return mod
 
 # Capture sleeps without actually sleeping (useful for backoff tests)
