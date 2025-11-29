@@ -1,8 +1,3 @@
-diff --git a/README.md b/README.md
-index 3a12558f2fe5bdad7febf95a0f5347a9c0857631..db7f8e53056c1503eed9fd3bc8c66721af90d147 100644
---- a/README.md
-+++ b/README.md
-@@ -1,45 +1,46 @@
  # 📊 Chicago Crime Downloader
  
  [![Test & Lint](https://github.com/BayoHabib/chicago_crime_data_cli/actions/workflows/test.yml/badge.svg)](https://github.com/BayoHabib/chicago_crime_data_cli/actions)
