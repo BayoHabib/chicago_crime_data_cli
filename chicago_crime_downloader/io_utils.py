@@ -11,6 +11,14 @@ import pandas as pd
 from .config import RunConfig
 
 
+def data_extension(out_format: str, compression: str | None) -> str:
+    """Return file extension (without leading dot) for format + compression."""
+
+    if out_format == "csv":
+        return "csv.gz" if compression == "gzip" else "csv"
+    return "parquet"
+
+
 def _parquet_engine() -> str | None:
     """Detect available parquet engine (pyarrow or fastparquet)."""
     try:
@@ -26,25 +34,27 @@ def _parquet_engine() -> str | None:
             return None
 
 
-def write_frame(df: pd.DataFrame, path: Path, out_format: str) -> Path:
+def write_frame(df: pd.DataFrame, path: Path, out_format: str, *, compression: str | None) -> Path:
     """Write dataframe to file, with parquet fallback to CSV."""
+
     if out_format == "parquet":
         eng = _parquet_engine()
         if eng:
-            df.to_parquet(path, index=False, engine=eng)  # type: ignore[call-overload]
+            df.to_parquet(path, index=False, engine=eng, compression=compression)  # type: ignore[call-overload]
             return path
-        else:
-            logging.warning(
-                "Parquet engine not found (install pyarrow or fastparquet). "
-                "Falling back to CSV for this chunk: %s",
-                path.with_suffix(".csv"),
-            )
-            csv_path = path.with_suffix(".csv")
-            df.to_csv(csv_path, index=False)
-            return csv_path
-    else:
-        df.to_csv(path, index=False)
-        return path
+
+        logging.warning(
+            "Parquet engine not found (install pyarrow or fastparquet). "
+            "Falling back to CSV for this chunk: %s",
+            path.with_name(f"{path.stem}.{data_extension('csv', compression)}"),
+        )
+        csv_name = f"{path.stem}.{data_extension('csv', compression)}"
+        csv_path = path.with_name(csv_name)
+        df.to_csv(csv_path, index=False, compression=compression)
+        return csv_path
+
+    df.to_csv(path, index=False, compression=compression)
+    return path
 
 
 def sha256_of_file(path: Path) -> str:
@@ -100,56 +110,89 @@ def _split_wid(wid: str) -> tuple[str, str, str | None]:
 def make_paths(cfg: RunConfig, mode_label: str, wid: str, chunk_no: int) -> tuple[Path, Path, Path]:
     """Compute base_dir, data_path, manifest_path based on layout."""
     year, month, day = _split_wid(wid)
+    data_ext = data_extension(cfg.out_format, cfg.compression)
 
     if cfg.layout == "nested":
         base_dir = cfg.out_root / mode_label / wid
-        fname = f"{wid}_chunk_{chunk_no:04d}.{cfg.out_format}"
+        fname = f"{wid}_chunk_{chunk_no:04d}.{data_ext}"
     elif cfg.layout == "mode-flat":
         base_dir = cfg.out_root / mode_label
-        fname = f"{wid}_chunk_{chunk_no:04d}.{cfg.out_format}"
+        fname = f"{wid}_chunk_{chunk_no:04d}.{data_ext}"
     elif cfg.layout == "flat":
         base_dir = cfg.out_root
-        fname = f"{mode_label}_{wid}_chunk_{chunk_no:04d}.{cfg.out_format}"
+        fname = f"{mode_label}_{wid}_chunk_{chunk_no:04d}.{data_ext}"
     elif cfg.layout == "ymd":
         if day:
             base_dir = cfg.out_root / mode_label / year / month / day
         else:
             base_dir = cfg.out_root / mode_label / year / month
-        fname = f"{wid}_chunk_{chunk_no:04d}.{cfg.out_format}"
+        fname = f"{wid}_chunk_{chunk_no:04d}.{data_ext}"
     else:
         base_dir = cfg.out_root / mode_label / wid
-        fname = f"{wid}_chunk_{chunk_no:04d}.{cfg.out_format}"
+        fname = f"{wid}_chunk_{chunk_no:04d}.{data_ext}"
 
     data_path = base_dir / fname
-    manifest_path = base_dir / (fname.replace(f".{cfg.out_format}", ".manifest.json"))
+    suffix = f".{data_ext}"
+    manifest_base = fname[: -len(suffix)] if fname.endswith(suffix) else fname
+    manifest_path = base_dir / f"{manifest_base}.manifest.json"
     return base_dir, data_path, manifest_path
 
 
 def resume_index_for_layout(
-    base_dir: Path, wid: str, mode_label: str, out_format: str, layout: str
+    base_dir: Path,
+    wid: str,
+    mode_label: str,
+    out_format: str,
+    layout: str,
+    compression: str | None,
 ) -> int:
-    """Count existing chunk files for a window, accounting for layout."""
-    if layout in ("nested", "ymd"):
-        patt = f"*chunk_*.{out_format}"
-    elif layout == "mode-flat":
-        patt = f"{wid}_chunk_*.{out_format}"
-    elif layout == "flat":
-        patt = f"{mode_label}_{wid}_chunk_*.{out_format}"
-    else:
-        patt = f"*chunk_*.{out_format}"
-    files = sorted(base_dir.glob(patt)) if base_dir.exists() else []
+    """Count existing chunk files for a window, accounting for layout.
+
+    If ``out_format`` is ``"parquet"`` we also consider ``*.csv`` files to
+    support environments without a parquet engine, where ``write_frame`` falls
+    back to CSV but the run configuration still advertises parquet output.
+    """
+
+    def _patterns(ext: str) -> str:
+        if layout in ("nested", "ymd"):
+            return f"*chunk_*.{ext}"
+        if layout == "mode-flat":
+            return f"{wid}_chunk_*.{ext}"
+        if layout == "flat":
+            return f"{mode_label}_{wid}_chunk_*.{ext}"
+        return f"*chunk_*.{ext}"
+
+    primary_ext = data_extension(out_format, compression)
+    patterns = [_patterns(primary_ext)]
+    if out_format == "parquet":
+        patterns.append(_patterns(data_extension("csv", compression)))
+
+    if not base_dir.exists():
+        return 0
+
+    files: list[Path] = []
+    for patt in patterns:
+        files.extend(base_dir.glob(patt))
+    files.sort()
     return len(files)
 
 
-def resume_index(dir_: Path, prefix: str | None = None) -> int:
+def resume_index(dir_: Path, prefix: str | None, *, out_format: str, compression: str | None) -> int:
     """Count existing chunk files for full mode."""
+
+    primary_ext = data_extension(out_format, compression)
+    csv_ext = data_extension("csv", compression)
+
     patterns = []
     if prefix:
-        patterns = [f"{prefix}_chunk_*.parquet", f"{prefix}_chunk_*.csv"]
+        patterns = [f"{prefix}_chunk_*.{primary_ext}"]
     else:
-        patterns = ["chunk_*.parquet", "chunk_*.csv"]
+        patterns = [f"chunk_*.{primary_ext}"]
 
-    files = []
+    if out_format == "parquet":
+        patterns.append(f"{prefix + '_' if prefix else ''}chunk_*.{csv_ext}")
+
+    files: list[Path] = []
     for pat in patterns:
         files += list(dir_.glob(pat))
     files.sort()

@@ -18,6 +18,7 @@ Production-ready, modular CLI tool to download Chicago crime data from the **Cit
 - 🏷️ **Structured Logs** — JSON manifests with checksums, timing, metadata
 - 🔐 **Token Support** — Socrata API tokens for higher rate limits
 - 🧱 **Reproducible** — Every file has SHA256 hash + parameter tracking
+- 🗜️ **Smaller Outputs** — Optional gzip for CSV and codec selection for Parquet
 
 ---
 
@@ -131,6 +132,7 @@ chicago-crime-dl [OPTIONS]
 | `--end-date` | `YYYY-MM-DD` | — | End of date range (inclusive) |
 | `--out-root` | path | `data/raw` | Output root directory |
 | `--out-format` | `csv`/`parquet` | `csv` | Export format |
+| `--compression` | codec | `none` | `gzip` for CSV; `snappy`/`gzip`/`brotli`/`zstd`/`lz4` for Parquet (engine-dependent) |
 | `--chunk-size` | integer | 50000 | Rows per request |
 | `--max-chunks` | integer | ∞ | Limit chunks per run (for testing) |
 
@@ -165,6 +167,21 @@ chicago-crime-dl [OPTIONS]
 Automatic inference:
 - If `out-root` ends with mode name (`raw_daily` → daily), uses **mode-flat**.
 - Else defaults to **nested**.
+
+## 💾 Storage tips
+
+- For the smallest footprint and fastest reloads, use **Parquet** with a native engine (`pyarrow` or `fastparquet`).
+- If you need CSV compatibility, enable gzip compression to shrink files dramatically:
+
+```bash
+chicago-crime-dl --mode daily --start-date 2020-01-01 --end-date 2020-01-03 \
+  --out-root ./data/csv_gzip --out-format csv --compression gzip
+```
+
+Chunk filenames incorporate the chosen format and compression for easy discovery:
+
+- Parquet chunks: `*_chunk_XXXX.parquet`
+- Gzip CSV chunks: `*_chunk_XXXX.csv.gz`
 
 ---
 

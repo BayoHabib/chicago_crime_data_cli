@@ -15,6 +15,7 @@ def test_stop_requested_breaks_window(tmp_path):
             "daily",
             tmp_path,
             "csv",
+            None,
             50000,
             None,
             "2020-01-01",

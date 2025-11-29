@@ -11,7 +11,7 @@ def test_parquet_fallback_to_csv_when_no_engine(tmp_path, monkeypatch):
 
     df = pd.DataFrame({"a": [1, 2], "b": ["x", "y"]})
     target = tmp_path / "chunk_0001.parquet"
-    written = write_frame(df, target, out_format="parquet")
+    written = write_frame(df, target, out_format="parquet", compression=None)
 
     # Should have written CSV instead and returned that path
     assert written.suffix == ".csv"

@@ -28,6 +28,7 @@ class RunConfig:
     mode: str
     out_root: Path
     out_format: str
+    compression: str | None
     chunk_size: int
     max_chunks: int | None
     start_date: str | None

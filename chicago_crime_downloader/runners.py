@@ -34,7 +34,7 @@ def run_offset_mode(
     base_dir = cfg.out_root / "full" / window_id
     ensure_dir(base_dir)
 
-    start_idx = resume_index(base_dir, prefix=None)
+    start_idx = resume_index(base_dir, prefix=None, out_format=cfg.out_format, compression=cfg.compression)
     offset = start_idx * cfg.chunk_size
     chunk_no = start_idx + 1
 
@@ -72,7 +72,7 @@ def run_offset_mode(
             break
 
         df = pd.DataFrame(data)
-        write_frame(df, data_path, cfg.out_format)
+        write_frame(df, data_path, cfg.out_format, compression=cfg.compression)
         t1 = time.time()
         write_manifest(
             manifest_path, data_path=data_path, params=params, rows=len(df), started=t0, finished=t1
@@ -118,7 +118,9 @@ def run_windowed_mode(
         created_this_run = False
 
         start_idx = (
-            resume_index_for_layout(base_dir, wid, mode_label, cfg.out_format, cfg.layout)
+            resume_index_for_layout(
+                base_dir, wid, mode_label, cfg.out_format, cfg.layout, cfg.compression
+            )
             if base_dir_existed
             else 0
         )
@@ -166,7 +168,7 @@ def run_windowed_mode(
                 created_this_run = True
 
             df = pd.DataFrame(data)
-            actual_path = write_frame(df, data_path, cfg.out_format)
+            actual_path = write_frame(df, data_path, cfg.out_format, compression=cfg.compression)
             t1 = time.time()
             write_manifest(
                 manifest_path,

@@ -79,6 +79,16 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     ap.add_argument(
+        "--compression",
+        choices=["none", "gzip", "snappy", "brotli", "zstd", "lz4"],
+        default="none",
+        help=(
+            "Optional compression codec. csv supports 'gzip'; parquet supports "
+            "snappy/brotli/gzip/zstd/lz4 depending on installed parquet engine."
+        ),
+    )
+
+    ap.add_argument(
         "--select",
         type=str,
         default=None,
@@ -147,6 +157,11 @@ def main(argv: list[str] | None = None) -> None:
         user_agent=args.user_agent,
     )
 
+    compression = None if args.compression == "none" else args.compression
+    if args.out_format == "csv" and compression not in (None, "gzip"):
+        logging.error("csv output only supports gzip compression.")
+        sys.exit(2)
+
     if args.layout is None:
         root_name = args.out_root.name.lower()
         inferred_layout = "mode-flat" if root_name.endswith(args.mode) else "nested"
@@ -159,6 +174,7 @@ def main(argv: list[str] | None = None) -> None:
         mode=args.mode,
         out_root=args.out_root,
         out_format=args.out_format,
+        compression=compression,
         chunk_size=args.chunk_size,
         max_chunks=args.max_chunks,
         start_date=args.start_date,

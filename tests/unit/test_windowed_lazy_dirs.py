@@ -17,6 +17,7 @@ def test_window_creates_no_empty_dir_when_zero_rows(tmp_path, monkeypatch, caplo
         mode="daily",
         out_root=tmp_path,
         out_format="csv",
+        compression=None,
         chunk_size=50000,
         max_chunks=None,
         start_date="2025-11-05",
