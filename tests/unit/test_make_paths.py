@@ -81,3 +81,24 @@ def test_resume_index_for_layout(tmp_path, layout, wid, mode_label, filenames, e
 
     count = resume_index_for_layout(base_dir, wid, mode_label, "csv", layout)
     assert count == expected
+
+
+@pytest.mark.unit
+def test_make_paths_with_gzip(tmp_path):
+    cfg = RunConfig(
+        mode="daily",
+        out_root=tmp_path,
+        out_format="csv",
+        chunk_size=10,
+        max_chunks=None,
+        start_date=None,
+        end_date=None,
+        select=None,
+        columns_file=None,
+        compression="gzip",
+    )
+
+    base_dir, data_path, manifest_path = make_paths(cfg, "daily", "2024-01-02", 3)
+
+    assert data_path.name.endswith(".csv.gz")
+    assert manifest_path.name.endswith(".manifest.json")

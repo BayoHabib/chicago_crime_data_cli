@@ -79,6 +79,16 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     ap.add_argument(
+        "--compression",
+        type=str,
+        default=None,
+        help=(
+            "Optional compression codec. "
+            "CSV: gzip. Parquet: snappy, gzip, brotli, zstd, lz4."
+        ),
+    )
+
+    ap.add_argument(
         "--select",
         type=str,
         default=None,
@@ -140,6 +150,25 @@ def main(argv: list[str] | None = None) -> None:
 
     setup_logging(args.log_file, args.log_json)
 
+    compression = args.compression.lower() if args.compression else None
+    if compression == "none":
+        compression = None
+
+    if args.out_format == "csv":
+        valid_csv = {None, "gzip"}
+        if compression not in valid_csv:
+            logging.error("Unsupported compression %s for CSV. Use 'gzip' or omit.", compression)
+            sys.exit(2)
+    else:
+        valid_parquet = {None, "snappy", "gzip", "brotli", "zstd", "lz4"}
+        if compression not in valid_parquet:
+            logging.error(
+                "Unsupported compression %s for parquet. "
+                "Choose snappy/gzip/brotli/zstd/lz4 or omit.",
+                compression,
+            )
+            sys.exit(2)
+
     http = HttpConfig(
         timeout=args.http_timeout,
         retries=args.max_retries,
@@ -159,6 +188,7 @@ def main(argv: list[str] | None = None) -> None:
         mode=args.mode,
         out_root=args.out_root,
         out_format=args.out_format,
+        compression=compression,
         chunk_size=args.chunk_size,
         max_chunks=args.max_chunks,
         start_date=args.start_date,

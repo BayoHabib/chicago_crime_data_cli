@@ -34,5 +34,6 @@ class RunConfig:
     end_date: str | None
     select: str | None
     columns_file: Path | None
+    compression: str | None = None
     layout: str = "nested"
     preflight: bool = False

@@ -13,3 +13,11 @@ def test_resume_index_counts_existing(tmp_path):
     (d / "something_else.txt").write_text("ignore")
     assert resume_index(d, "2020-01-01") == 2
 
+
+@pytest.mark.unit
+def test_resume_index_counts_gzip(tmp_path):
+    d = tmp_path / "full" / "all"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "chunk_0001.csv.gz").write_text("dummy")
+    assert resume_index(d, prefix=None, out_format="csv", compression="gzip") == 1
+
