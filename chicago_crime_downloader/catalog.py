@@ -6,6 +6,7 @@ import logging
 import os
 from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -44,7 +45,7 @@ def discover_chunks(root: Path) -> tuple[list[Path], list[Path]]:
 
 def load_manifest(path: Path) -> dict[str, object]:
     """Load a manifest JSON file and inject helper metadata."""
-    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload = cast(dict[str, object], json.loads(path.read_text(encoding="utf-8")))
     payload["manifest_path"] = str(path)
     payload["manifest_dir"] = str(path.parent)
     payload.setdefault("data_file", os.fspath(path))
@@ -64,9 +65,17 @@ def collect_manifests(paths: Iterable[Path]) -> list[dict[str, object]]:
 
 def _duckdb_identifier(name: str) -> str:
     """Quote *name* for use as a DuckDB identifier."""
-    import duckdb  # type: ignore[import-not-found]  # imported lazily
+    try:
+        import duckdb  # type: ignore[import-not-found]  # imported lazily
 
-    return duckdb.escape_identifier(name)
+        escape_identifier = getattr(duckdb, "escape_identifier", None)
+        if escape_identifier:
+            return cast(str, escape_identifier(name))
+    except Exception:  # pragma: no cover - defensive fallback
+        pass
+
+    escaped = name.replace("\"", "\"\"")
+    return f'"{escaped}"'
 
 
 def _reader_sql(path: Path) -> tuple[str, list[str]] | None:
@@ -110,12 +119,11 @@ def materialize_duckdb(
             if manifest_ident:
                 con.execute(f"DROP TABLE IF EXISTS {manifest_ident}")
 
-        existing = bool(
-            con.execute(
-                "SELECT COUNT(*) FROM duckdb_tables WHERE lower(table_name) = lower(?)",
-                [table],
-            ).fetchone()[0]
-        )
+        existing_row = con.execute(
+            "SELECT COUNT(*) FROM duckdb_tables WHERE lower(table_name) = lower(?)",
+            [table],
+        ).fetchone()
+        existing = bool(existing_row[0] if existing_row else 0)
 
         first_insert = True
         inserted = 0
