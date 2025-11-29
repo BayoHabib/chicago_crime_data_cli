@@ -4,13 +4,37 @@ from __future__ import annotations
 import json
 import logging
 import os
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import cast
 
 import pandas as pd
 
 MANIFEST_SUFFIX = ".manifest.json"
+
+# Columns that should be persisted as text based on the Chicago crime data dictionary.
+# Using VARCHAR preserves leading zeros and categorical semantics (e.g., beat, district).
+DEFAULT_TYPE_OVERRIDES: dict[str, str] = {
+    "block": "VARCHAR",
+    "case_number": "VARCHAR",
+    "iucr": "VARCHAR",
+    "primary_type": "VARCHAR",
+    "description": "VARCHAR",
+    "location_description": "VARCHAR",
+    "beat": "VARCHAR",
+    "district": "VARCHAR",
+    "ward": "VARCHAR",
+    "community_area": "VARCHAR",
+    "fbi_code": "VARCHAR",
+    "x_coordinate": "VARCHAR",
+    "y_coordinate": "VARCHAR",
+    "location": "VARCHAR",
+}
+
+
+def default_type_overrides() -> dict[str, str]:
+    """Return a copy of the default DuckDB type overrides."""
+    return dict(DEFAULT_TYPE_OVERRIDES)
 
 
 def _is_chunk_file(path: Path) -> bool:
@@ -78,17 +102,45 @@ def _duckdb_identifier(name: str) -> str:
     return f'"{escaped}"'
 
 
-def _reader_sql(path: Path) -> tuple[str, list[str]] | None:
-    """Return a DuckDB reader expression and parameters for *path*."""
+def _read_relation(
+    con,
+    path: Path,
+    *,
+    all_varchar: bool,
+    column_types: Mapping[str, str] | None,
+):
+    """Return a DuckDB relation for *path* or ``None`` if unsupported."""
     suffixes = path.suffixes
     if not suffixes:
         return None
     if suffixes[-1] == ".parquet":
-        return "read_parquet(?)", [str(path)]
-    if suffixes[-1] == ".csv":
-        return "read_csv_auto(?, SAMPLE_SIZE=-1)", [str(path)]
-    if len(suffixes) >= 2 and suffixes[-2:] == [".csv", ".gz"]:
-        return "read_csv_auto(?, SAMPLE_SIZE=-1)", [str(path)]
+        return con.read_parquet(str(path))
+    if suffixes[-1] == ".csv" or (len(suffixes) >= 2 and suffixes[-2:] == [".csv", ".gz"]):
+        options: dict[str, object] = {"sample_size": -1}
+        if all_varchar:
+            options["all_varchar"] = True
+
+        reader = getattr(con, "read_csv_auto", None)
+        if reader is None:
+            reader = getattr(con, "read_csv", None)
+        if reader is None:
+            raise AttributeError("DuckDB connection missing CSV reader")
+
+        relation = reader(str(path), **options)
+        if column_types:
+            projections: list[str] = []
+            applied_override = False
+            for column in relation.columns:
+                identifier = _duckdb_identifier(column)
+                override = column_types.get(column)
+                if override:
+                    projections.append(f"CAST({identifier} AS {override}) AS {identifier}")
+                    applied_override = True
+                else:
+                    projections.append(identifier)
+            if applied_override:
+                relation = relation.project(", ".join(projections))
+        return relation
     return None
 
 
@@ -100,9 +152,25 @@ def materialize_duckdb(
     table: str = "crimes",
     manifest_table: str | None = "chunk_manifests",
     replace: bool = False,
+    column_types: Mapping[str, str] | None = None,
+    all_varchar: bool = True,
     progress: Callable[[Path], None] | None = None,
 ) -> None:
-    """Load chunk files into a DuckDB table alongside manifest metadata."""
+    """
+    Load chunk files into a DuckDB table alongside manifest metadata.
+
+    Args:
+        files: Ordered chunk data files to load.
+        manifests: Optional manifest payloads to persist.
+        database: Destination DuckDB database path.
+        table: Primary table to append data.
+        manifest_table: Optional table for manifest metadata.
+        replace: Drop existing tables before inserting.
+        column_types: DuckDB column overrides (e.g., {"beat": "VARCHAR"}).
+        all_varchar: When true, force CSV readers to treat every column as text.
+        progress: Optional callback invoked after each file is processed.
+
+    """
     if not files:
         raise ValueError("No chunk files supplied")
 
@@ -125,20 +193,45 @@ def materialize_duckdb(
         ).fetchone()
         existing = bool(existing_row[0] if existing_row else 0)
 
-        first_insert = True
         inserted = 0
+        target_columns: list[str] | None = None
+        type_overrides = dict(column_types) if column_types else None
         for path in files:
-            reader = _reader_sql(path)
-            if reader is None:
+            relation = _read_relation(
+                con,
+                path,
+                all_varchar=all_varchar,
+                column_types=type_overrides,
+            )
+            if relation is None:
                 continue
-            sql, params = reader
-            action = "CREATE" if first_insert and not existing else "INSERT"
-            if action == "CREATE":
-                con.execute(f"CREATE TABLE {table_ident} AS SELECT * FROM {sql}", params)
+            current_columns = list(relation.columns)
+            if target_columns is None:
+                target_columns = current_columns
+            elif current_columns != target_columns:
+                projection_parts: list[str] = []
+                missing: list[str] = []
+                for column in target_columns:
+                    if column in relation.columns:
+                        projection_parts.append(_duckdb_identifier(column))
+                    else:
+                        missing.append(column)
+                if missing:
+                    raise ValueError(
+                        "Missing expected columns in relation: "
+                        + ", ".join(missing)
+                    )
+                relation = relation.project(", ".join(projection_parts))
+            if not existing and inserted == 0:
+                creator = getattr(relation, "create_table", None)
+                if creator is None:
+                    creator = getattr(relation, "to_table", None)
+                if creator is None:
+                    raise AttributeError("DuckDB relation missing table creation helper")
+                creator(table)
                 existing = True
-                first_insert = False
             else:
-                con.execute(f"INSERT INTO {table_ident} SELECT * FROM {sql}", params)
+                relation.insert_into(table)
             if progress:
                 progress(path)
             inserted += 1

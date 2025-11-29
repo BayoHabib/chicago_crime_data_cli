@@ -8,8 +8,8 @@ the old main() entrypoint for backward compatibility.
 New code should import directly from chicago_crime_downloader.
 """
 
-from chicago_crime_downloader.cli import main
 from chicago_crime_downloader import *  # noqa: F401, F403
+from chicago_crime_downloader.cli import main
 
 if __name__ == "__main__":
     main()

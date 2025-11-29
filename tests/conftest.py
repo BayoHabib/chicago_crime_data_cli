@@ -1,6 +1,7 @@
 import importlib
 import sys
 import time
+from types import ModuleType
 
 import pytest
 
@@ -33,11 +34,11 @@ def run_cli(monkeypatch, module_path: str, argv):
     if module_path in sys.modules:
         del sys.modules[module_path]
 
-    mod = importlib.import_module(module_path)
+    mod: ModuleType = importlib.import_module(module_path)
 
     # Reset global stop flag if present
     if hasattr(mod, "stop_requested"):
-        mod.stop_requested = False
+        setattr(mod, "stop_requested", False)
 
     # Call main() with argv directly (not via sys.argv)
     mod.main(argv=argv)

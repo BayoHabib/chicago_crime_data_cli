@@ -1,0 +1,17 @@
+{
+  "data_file": "data\\monthly_2020_2025\\monthly\\2023-06\\2023-06_chunk_0001.csv",
+  "rows": 22752,
+  "sha256": "6df7c003b1caa21c94214eaecab465fa6b6f7506ef3fcfd5cdfa515eedf27af6",
+  "params": {
+    "$limit": "50000",
+    "$offset": "0",
+    "$order": "date desc",
+    "$where": "date >= '2023-06-01T00:00:00.000' AND date < '2023-07-01T00:00:00.000'"
+  },
+  "started_at": "2025-11-29T07:46:02.573944",
+  "finished_at": "2025-11-29T07:46:04.725831",
+  "duration_seconds": 2.152,
+  "endpoint": "https://data.cityofchicago.org/resource/ijzp-q8t2.json",
+  "version": 5,
+  "compression": "none"
+}
