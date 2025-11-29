@@ -173,7 +173,12 @@ def resume_index_for_layout(
     layout: str,
     compression: str | None = None,
 ) -> int:
-    """Count existing chunk files for a window, accounting for layout."""
+    """
+    Count existing chunk files for a window, accounting for layout.
+
+    Include alternate suffixes so parquet runs that fall back to CSV can still resume
+    seamlessly on subsequent executions.
+    """
     suffixes = _suffix_candidates(out_format, compression)
     patterns: list[str] = []
     for suffix in suffixes:

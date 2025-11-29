@@ -34,11 +34,13 @@ def run_offset_mode(
     base_dir = cfg.out_root / "full" / window_id
     ensure_dir(base_dir)
 
+    compression = getattr(cfg, "compression", None)
+
     start_idx = resume_index(
         base_dir,
         prefix=None,
         out_format=cfg.out_format,
-        compression=getattr(cfg, "compression", None),
+        compression=compression,
     )
     offset = start_idx * cfg.chunk_size
     chunk_no = start_idx + 1
@@ -56,7 +58,10 @@ def run_offset_mode(
             logging.info(f"🛑 Reached max chunks ({cfg.max_chunks}).")
             break
 
-        suffix = ".csv.gz" if cfg.out_format == "csv" and cfg.compression == "gzip" else f".{cfg.out_format}"
+        if cfg.out_format == "csv" and compression == "gzip":
+            suffix = ".csv.gz"
+        else:
+            suffix = f".{cfg.out_format}"
         data_path = base_dir / f"chunk_{chunk_no:04d}{suffix}"
         manifest_path = base_dir / f"chunk_{chunk_no:04d}.manifest.json"
         if data_path.exists() and manifest_path.exists():
@@ -78,7 +83,7 @@ def run_offset_mode(
             break
 
         df = pd.DataFrame(data)
-        actual_path = write_frame(df, data_path, cfg.out_format, getattr(cfg, "compression", None))
+        actual_path = write_frame(df, data_path, cfg.out_format, compression)
         t1 = time.time()
         write_manifest(
             manifest_path,
@@ -87,7 +92,7 @@ def run_offset_mode(
             rows=len(df),
             started=t0,
             finished=t1,
-            compression=getattr(cfg, "compression", None),
+            compression=compression,
         )
         logging.info(f"💾 Saved {len(df):,} rows → {actual_path.name}")
 
@@ -109,6 +114,7 @@ def run_windowed_mode(
     mode_label: str,
 ) -> None:
     """Download using windowed queries (monthly/weekly/daily)."""
+    compression = getattr(cfg, "compression", None)
     for s, e, wid in windows:
         global stop_requested
         if stop_requested:
@@ -136,7 +142,7 @@ def run_windowed_mode(
                 mode_label,
                 cfg.out_format,
                 cfg.layout,
-                getattr(cfg, "compression", None),
+                compression,
             )
             if base_dir_existed
             else 0
@@ -185,12 +191,7 @@ def run_windowed_mode(
                 created_this_run = True
 
             df = pd.DataFrame(data)
-            actual_path = write_frame(
-                df,
-                data_path,
-                cfg.out_format,
-                getattr(cfg, "compression", None),
-            )
+            actual_path = write_frame(df, data_path, cfg.out_format, compression)
             t1 = time.time()
             write_manifest(
                 manifest_path,
@@ -199,7 +200,7 @@ def run_windowed_mode(
                 rows=len(df),
                 started=t0,
                 finished=t1,
-                compression=getattr(cfg, "compression", None),
+                compression=compression,
             )
             logging.info(f"💾 [{wid}] Saved {len(df):,} rows → {actual_path.name}")
             wrote_any = True
