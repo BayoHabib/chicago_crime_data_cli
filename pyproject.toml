@@ -46,6 +46,7 @@ dev = [
   "types-requests>=2.31",
   "pandas-stubs>=2.1",
 ]
+warehouse = ["duckdb>=0.9"]
 
 [project.scripts]
 chicago-crime-dl = "chicago_crime_downloader.cli:main"

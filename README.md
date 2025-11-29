@@ -115,6 +115,11 @@
 +chicago-crime-dl --mode daily --start-date 2020-01-01 --end-date 2020-01-03 \
 +  --out-root ./data/csv_gzip --out-format csv --compression gzip
 +```
+- Materialize chunked outputs into DuckDB for analytics:
+
+```bash
+python data/materialize_duckdb.py data/raw_daily --database warehouse/crime.duckdb --replace --verbose
+```
 +
  ---
  

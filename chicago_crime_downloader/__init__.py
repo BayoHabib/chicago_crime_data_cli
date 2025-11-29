@@ -1,4 +1,5 @@
 """Package public exports."""
+from .catalog import collect_manifests, discover_chunks, materialize_duckdb
 from .config import (
     BASE_URL,
     DEFAULT_CHUNK,
@@ -57,6 +58,9 @@ __all__ = [
     "make_paths",
     "resume_index",
     "resume_index_for_layout",
+    "discover_chunks",
+    "collect_manifests",
+    "materialize_duckdb",
     "run_offset_mode",
     "run_windowed_mode",
     "stop_requested",
