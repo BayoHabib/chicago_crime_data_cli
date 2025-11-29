@@ -1,0 +1,17 @@
+{
+  "data_file": "data\\monthly_2020_2025\\monthly\\2021-10\\2021-10_chunk_0001.csv",
+  "rows": 19413,
+  "sha256": "fac470804fa1a6195aa8fc9c1f6528ea9351790dce73006199eb2d1027ebc425",
+  "params": {
+    "$limit": "50000",
+    "$offset": "0",
+    "$order": "date desc",
+    "$where": "date >= '2021-10-01T00:00:00.000' AND date < '2021-11-01T00:00:00.000'"
+  },
+  "started_at": "2025-11-29T07:45:08.739194",
+  "finished_at": "2025-11-29T07:45:10.890584",
+  "duration_seconds": 2.151,
+  "endpoint": "https://data.cityofchicago.org/resource/ijzp-q8t2.json",
+  "version": 5,
+  "compression": "none"
+}

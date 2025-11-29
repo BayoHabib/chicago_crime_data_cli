@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from pathlib import Path
 
-from chicago_crime_downloader.catalog import collect_manifests, discover_chunks, materialize_duckdb
+from chicago_crime_downloader.catalog import (
+    collect_manifests,
+    default_type_overrides,
+    discover_chunks,
+    materialize_duckdb,
+)
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -42,6 +48,17 @@ def build_argument_parser() -> argparse.ArgumentParser:
         help="Drop existing tables before loading new data.",
     )
     parser.add_argument(
+        "--types",
+        type=Path,
+        default=None,
+        help="JSON file mapping column names to DuckDB types (overrides defaults).",
+    )
+    parser.add_argument(
+        "--keep-types",
+        action="store_true",
+        help="Allow DuckDB to infer column types instead of forcing text.",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose logging output.",
@@ -73,6 +90,28 @@ def main(argv: list[str] | None = None) -> int:
         args.database,
     )
 
+    type_overrides = default_type_overrides()
+    overrides_path: Path | None = args.types
+    if overrides_path is not None:
+        overrides_path = overrides_path.expanduser().resolve()
+        if not overrides_path.exists():
+            parser.error(f"Type overrides file {overrides_path} does not exist.")
+        try:
+            payload = json.loads(overrides_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            parser.error(f"Invalid JSON in {overrides_path}: {exc}")
+        if not isinstance(payload, dict):
+            parser.error(
+                f"Expected a JSON object mapping column names to types in {overrides_path}"
+            )
+        for key, value in payload.items():
+            if not isinstance(key, str) or not isinstance(value, str):
+                parser.error(
+                    "Type overrides JSON must contain string keys and values; offending entry in "
+                    f"{overrides_path}."
+                )
+            type_overrides[key] = value
+
     try:
         materialize_duckdb(
             data_files,
@@ -81,9 +120,11 @@ def main(argv: list[str] | None = None) -> int:
             table=args.table,
             manifest_table=args.manifest_table,
             replace=args.replace,
+            column_types=type_overrides,
+            all_varchar=not args.keep_types,
             progress=lambda path: logging.info("Loaded %s", path),
         )
-    except ImportError as exc:
+    except ImportError:
         parser.error(
             "DuckDB is required for this script. Install the optional 'warehouse' extra: "
             "pip install 'chicago-crime-downloader[warehouse]'"

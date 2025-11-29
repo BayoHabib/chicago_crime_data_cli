@@ -120,6 +120,12 @@
 ```bash
 python data/materialize_duckdb.py data/raw_daily --database warehouse/crime.duckdb --replace --verbose
 ```
+
+- CSV chunks are loaded as **TEXT** by default so categorical fields (e.g. `beat`, `district`) keep
+  their leading zeros. Pass `--keep-types` to let DuckDB infer numbers/dates, and `--types schema.json`
+  to overlay explicit column types.
+- The same controls are available on the primary CLI: use
+  `--materialize-keep-types` / `--materialize-types` when running `chicago-crime-dl`.
 +
  ---
  

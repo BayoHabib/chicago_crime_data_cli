@@ -68,3 +68,78 @@ def test_materialize_duckdb_roundtrip(tmp_path):
 
     assert total_rows == 3
     assert manifest_rows == 2
+
+
+@pytest.mark.unit
+def test_materialize_duckdb_type_overrides(tmp_path):
+    duckdb = pytest.importorskip("duckdb")
+
+    chunk_dir = tmp_path / "chunks"
+    chunk_dir.mkdir()
+
+    csv_path = chunk_dir / "chunk.csv"
+    csv_path.write_text("beat,value\n0611,test\n", encoding="utf-8")
+
+    database_path = tmp_path / "warehouse" / "test.duckdb"
+
+    materialize_duckdb(
+        [csv_path],
+        [],
+        database=database_path,
+        table="crimes",
+        manifest_table=None,
+        replace=True,
+        column_types={"beat": "VARCHAR"},
+        all_varchar=False,
+    )
+
+    con = duckdb.connect(str(database_path))
+    try:
+        description = con.execute("DESCRIBE crimes").fetchall()
+        type_map = {row[0]: row[1] for row in description}
+        row = con.execute("SELECT beat FROM crimes").fetchone()
+    finally:
+        con.close()
+
+    assert type_map["beat"] == "VARCHAR"
+    assert row == ("0611",)
+
+
+@pytest.mark.unit
+def test_materialize_duckdb_aligns_column_order(tmp_path):
+    duckdb = pytest.importorskip("duckdb")
+
+    chunk_dir = tmp_path / "chunks"
+    chunk_dir.mkdir()
+
+    csv_a = chunk_dir / "chunk_a.csv"
+    csv_b = chunk_dir / "chunk_b.csv"
+    csv_a.write_text("id,beat,x_coordinate\n1,0611,1904872\n", encoding="utf-8")
+    csv_b.write_text("beat,id,x_coordinate\n0712,2,1905000\n", encoding="utf-8")
+
+    database_path = tmp_path / "warehouse" / "test.duckdb"
+
+    materialize_duckdb(
+        [csv_a, csv_b],
+        [],
+        database=database_path,
+        table="crimes",
+        manifest_table=None,
+        replace=True,
+        column_types={"beat": "VARCHAR", "x_coordinate": "VARCHAR"},
+        all_varchar=False,
+    )
+
+    con = duckdb.connect(str(database_path))
+    try:
+        rows = con.execute(
+            "SELECT id, beat, x_coordinate FROM crimes ORDER BY id"
+        ).fetchall()
+        description = con.execute("DESCRIBE crimes").fetchall()
+    finally:
+        con.close()
+
+    type_map = {row[0]: row[1] for row in description}
+    assert type_map["beat"] == "VARCHAR"
+    assert type_map["x_coordinate"] == "VARCHAR"
+    assert rows == [(1, "0611", "1904872"), (2, "0712", "1905000")]
