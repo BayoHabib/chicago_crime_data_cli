@@ -46,6 +46,7 @@ dev = [
   "types-requests>=2.31",
   "pandas-stubs>=2.1",
 ]
+warehouse = ["duckdb>=0.9"]
 
 [project.scripts]
 chicago-crime-dl = "chicago_crime_downloader.cli:main"
@@ -79,7 +80,7 @@ exclude = [".git", "__pycache__", ".venv", "build", "dist"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "D"]
-ignore = ["D100", "D104", "D101", "D102", "D103", "D107", "D205", "D212", "D400", "D415"]
+ignore = ["D100", "D104", "D101", "D102", "D103", "D107", "D203", "D205", "D212", "D400", "D415"]
 
 [tool.mypy]
 python_version = "3.11"
