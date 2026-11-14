@@ -46,3 +46,15 @@ def test_safe_request_stops_after_retries(monkeypatch):
     with pytest.raises(Exception):
         http_module.safe_request({"$limit":"1"}, {"UA":"t"}, http)
 
+
+@pytest.mark.unit
+@pytest.mark.parametrize("retries", [0, -1])
+def test_safe_request_rejects_nonpositive_retries(monkeypatch, retries):
+    def unexpected_get(*args, **kwargs):
+        pytest.fail("invalid retry settings must be rejected before making requests")
+
+    monkeypatch.setattr(requests, "get", unexpected_get)
+
+    with pytest.raises(ValueError, match="at least 1"):
+        http_module.safe_request({}, {}, http_module.HttpConfig(retries=retries))
+

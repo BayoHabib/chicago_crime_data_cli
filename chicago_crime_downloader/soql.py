@@ -122,6 +122,6 @@ def week_windows(start: date, end: date) -> list[tuple[date, date, str]]:
         week_start = cur
         week_end = min(cur + timedelta(days=6), end)
         wid = f"{week_start:%Y}-W{week_start.isocalendar().week:02d}"
-        wins.append((week_start, week_end, wid))
+        wins.append((max(week_start, start), week_end, wid))
         cur += timedelta(days=7)
     return wins
