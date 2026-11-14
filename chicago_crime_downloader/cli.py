@@ -20,7 +20,7 @@ from .catalog import (
 from .config import HttpConfig, RunConfig
 from .http_client import headers_with_token
 from .logging_utils import setup_logging
-from .runners import run_offset_mode, run_windowed_mode
+from .runners import DownloadError, run_offset_mode, run_windowed_mode
 from .soql import day_windows, month_windows, parse_date, week_windows
 
 
@@ -263,25 +263,29 @@ def main(argv: list[str] | None = None) -> None:
     if not args.materialize_only:
         headers = headers_with_token(http)
 
-        if cfg.mode == "full":
-            run_offset_mode(cfg, http, headers, select)
-        else:
-            start_d = parse_date(cfg.start_date, role="start-date") or date(2001, 1, 1)
-            end_d = parse_date(cfg.end_date, role="end-date") or date.today()
-
-            if start_d > end_d:
-                logging.error("start-date is after end-date.")
-                sys.exit(2)
-
-            if cfg.mode == "monthly":
-                wins = month_windows(start_d, end_d)
-                run_windowed_mode(cfg, http, headers, select, wins, "monthly")
-            elif cfg.mode == "weekly":
-                wins = week_windows(start_d, end_d)
-                run_windowed_mode(cfg, http, headers, select, wins, "weekly")
+        try:
+            if cfg.mode == "full":
+                run_offset_mode(cfg, http, headers, select)
             else:
-                wins = day_windows(start_d, end_d)
-                run_windowed_mode(cfg, http, headers, select, wins, "daily")
+                start_d = parse_date(cfg.start_date, role="start-date") or date(2001, 1, 1)
+                end_d = parse_date(cfg.end_date, role="end-date") or date.today()
+
+                if start_d > end_d:
+                    logging.error("start-date is after end-date.")
+                    sys.exit(2)
+
+                if cfg.mode == "monthly":
+                    wins = month_windows(start_d, end_d)
+                    run_windowed_mode(cfg, http, headers, select, wins, "monthly")
+                elif cfg.mode == "weekly":
+                    wins = week_windows(start_d, end_d)
+                    run_windowed_mode(cfg, http, headers, select, wins, "weekly")
+                else:
+                    wins = day_windows(start_d, end_d)
+                    run_windowed_mode(cfg, http, headers, select, wins, "daily")
+        except DownloadError as exc:
+            logging.error("Download failed: %s", exc)
+            sys.exit(1)
     elif not materialize_requested:
         logging.warning("Nothing to do: --materialize-only specified without a database path.")
 

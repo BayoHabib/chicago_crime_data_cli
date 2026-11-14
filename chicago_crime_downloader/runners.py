@@ -22,6 +22,10 @@ from .soql import soql_params, soql_params_window
 stop_requested = False
 
 
+class DownloadError(RuntimeError):
+    """A download or preflight request failed after its retry attempts."""
+
+
 def run_offset_mode(
     cfg: RunConfig, http: HttpConfig, headers: dict[str, str], select: str | None
 ) -> None:
@@ -76,8 +80,7 @@ def run_offset_mode(
         try:
             data = safe_request(params, headers, http)
         except Exception as e:
-            logging.error(f"❌ Error at offset {offset}: {e}")
-            break
+            raise DownloadError(f"Error at offset {offset}: {e}") from e
         if not data:
             logging.info("✅ No more data (done).")
             break
@@ -124,7 +127,10 @@ def run_windowed_mode(
         # Preflight only for daily mode if enabled
         do_preflight = (mode_label == "daily") and getattr(cfg, "preflight", False)
         if do_preflight:
-            cnt = probe_count_for_day(s, headers, http)
+            try:
+                cnt = probe_count_for_day(s, headers, http)
+            except Exception as ex:
+                raise DownloadError(f"[{wid}] Preflight failed: {ex}") from ex
             logging.info(f"📊 [{wid}] Published rows: {cnt:,}")
             if cnt == 0:
                 logging.info(f"⏭️  [{wid}] Skipping fetch (0 rows published yet).")
@@ -172,7 +178,6 @@ def run_windowed_mode(
             try:
                 data = safe_request(params, headers, http)
             except Exception as ex:
-                logging.error(f"❌ [{wid}] Error at offset {offset}: {ex}")
                 if created_this_run and not wrote_any:
                     try:
                         if base_dir.exists() and not any(base_dir.iterdir()):
@@ -180,7 +185,7 @@ def run_windowed_mode(
                             logging.info(f"🧹 Removed empty dir: {base_dir}")
                     except Exception:
                         pass
-                break
+                raise DownloadError(f"[{wid}] Error at offset {offset}: {ex}") from ex
 
             if not data:
                 logging.info(f"✅ [{wid}] No more data for this window.")

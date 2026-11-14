@@ -28,11 +28,15 @@ def safe_request(
     params: dict[str, str], headers: dict[str, str], http: HttpConfig
 ) -> list[dict[str, Any]]:
     """Execute HTTP GET with retry logic and backoff."""
+    if http.retries < 1:
+        raise ValueError("HTTP retries must be at least 1.")
     backoff = 2
     for attempt in range(1, http.retries + 1):
         try:
             r = requests.get(BASE_URL, params=params, headers=headers, timeout=http.timeout)
             if r.status_code == 429:
+                if attempt == http.retries:
+                    r.raise_for_status()
                 wait = int(r.headers.get("Retry-After", backoff))
                 logging.warning(f"⏳ 429 Rate limited. Sleeping {wait}s…")
                 time.sleep(wait)
@@ -57,13 +61,10 @@ def probe_count_for_day(
     e = f"{(d + timedelta(days=1)):%Y-%m-%d}T00:00:00.000"
     params = {"$select": "count(1)", "$where": f"date >= '{s}' AND date < '{e}'"}
 
-    try:
-        hc = http or HttpConfig()
-        j = safe_request(params, headers, hc)
-        if not j or not isinstance(j, list) or not j:
-            return 0
-        row = j[0] if isinstance(j[0], dict) else {}
-        val = row.get("count_1") or row.get("count") or 0
-        return int(val)
-    except Exception:
+    hc = http or HttpConfig()
+    j = safe_request(params, headers, hc)
+    if not j or not isinstance(j, list):
         return 0
+    row = j[0] if isinstance(j[0], dict) else {}
+    val = row.get("count_1") or row.get("count") or 0
+    return int(val)

@@ -74,6 +74,15 @@
  | `--chunk-size` | integer | 50000 | Rows per request |
  | `--max-chunks` | integer | ∞ | Limit chunks per run (for testing) |
  
+ Weekly downloads clip the first and last windows to the requested date range.
+ Use a fresh output directory when repeating weekly downloads made with older versions;
+ previously downloaded chunks are reused rather than filtered retroactively.
+
+ Download or preflight failures exit with status **1**, including exhausted HTTP 429
+ retries. Completed chunks remain available for resumption. A failed download stops
+ the run before any requested DuckDB materialization; a successful empty response
+ still completes normally.
+
  ### Advanced Options
  
  | Option | Description |
